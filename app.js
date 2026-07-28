@@ -1,0 +1,313 @@
+/* 
+  SnapCover Pro - Application Engine
+  Features: Real-time URL validation, Canvas Image Conversion (PNG/JPG/WebP),
+  Custom Toast System, Theme Switcher & Responsive UI.
+*/
+
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  initUrlValidation();
+  initCustomDropdown();
+  initFormHandler();
+});
+
+// State Management
+const state = {
+  selectedFormat: 'png', // 'png', 'jpg', 'webp'
+  currentVideoId: null,
+  isProcessing: false
+};
+
+/* --- Theme Management --- */
+function initTheme() {
+  const savedTheme = localStorage.getItem('snapcover_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  updateThemeIcon(savedTheme);
+
+  const toggleBtn = document.getElementById('themeToggleBtn');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('snapcover_theme', next);
+      updateThemeIcon(next);
+      showToast(`Switched to ${next === 'dark' ? 'Dark' : 'Light'} mode`, 'info');
+    });
+  }
+}
+
+function updateThemeIcon(theme) {
+  const iconContainer = document.getElementById('themeIcon');
+  if (!iconContainer) return;
+  
+  if (theme === 'light') {
+    // Sun Icon
+    iconContainer.innerHTML = `<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>`;
+  } else {
+    // Moon Icon
+    iconContainer.innerHTML = `<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>`;
+  }
+}
+
+/* --- YouTube URL Parsing & Validation --- */
+const YT_REGEX = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|shorts\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+
+function extractVideoId(url) {
+  if (!url) return null;
+  const match = url.trim().match(YT_REGEX);
+  return match && match[1] ? match[1] : null;
+}
+
+function initUrlValidation() {
+  const input = document.getElementById('urlInput');
+  const hint = document.getElementById('validationHint');
+  
+  if (!input || !hint) return;
+
+  input.addEventListener('input', () => {
+    const val = input.value.trim();
+    if (!val) {
+      input.classList.remove('input-warning', 'input-valid');
+      hint.className = 'validation-hint';
+      hint.innerHTML = '';
+      return;
+    }
+
+    const videoId = extractVideoId(val);
+    if (videoId) {
+      input.classList.remove('input-warning');
+      input.classList.add('input-valid');
+      hint.className = 'validation-hint hint-valid';
+      hint.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Valid YouTube link detected! ID: ${videoId}`;
+    } else {
+      input.classList.remove('input-valid');
+      input.classList.add('input-warning');
+      hint.className = 'validation-hint hint-warning';
+      hint.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg> Please enter a complete YouTube video URL.`;
+    }
+  });
+}
+
+/* --- Custom Dropdown Logic (No native select) --- */
+function initCustomDropdown() {
+  const dropdown = document.getElementById('formatDropdown');
+  if (!dropdown) return;
+
+  const trigger = dropdown.querySelector('.dropdown-trigger');
+  const options = dropdown.querySelectorAll('.dropdown-option');
+  const selectedText = document.getElementById('selectedFormatText');
+
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle('open');
+  });
+
+  options.forEach(opt => {
+    opt.addEventListener('click', () => {
+      options.forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      state.selectedFormat = opt.dataset.value;
+      if (selectedText) selectedText.innerText = opt.dataset.value.toUpperCase();
+      dropdown.classList.remove('open');
+      showToast(`Selected format: ${state.selectedFormat.toUpperCase()}`, 'info');
+    });
+  });
+
+  document.addEventListener('click', () => {
+    dropdown.classList.remove('open');
+  });
+}
+
+/* --- Form Processing --- */
+function initFormHandler() {
+  const processBtn = document.getElementById('processBtn');
+  const input = document.getElementById('urlInput');
+
+  if (processBtn) {
+    processBtn.addEventListener('click', handleProcess);
+  }
+
+  if (input) {
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleProcess();
+      }
+    });
+  }
+}
+
+async function handleProcess() {
+  const input = document.getElementById('urlInput');
+  const val = input ? input.value.trim() : '';
+  const videoId = extractVideoId(val);
+
+  if (!videoId) {
+    showToast('Please enter a valid YouTube video link before processing.', 'error');
+    return;
+  }
+
+  state.currentVideoId = videoId;
+
+  // Show progress animation
+  const progressContainer = document.getElementById('progressContainer');
+  const progressBarFill = document.getElementById('progressBarFill');
+  const progressText = document.getElementById('progressText');
+  const resultsSection = document.getElementById('resultsSection');
+
+  progressContainer.classList.add('active');
+  resultsSection.classList.remove('active');
+
+  for (let i = 0; i <= 100; i += 20) {
+    await new Promise(res => setTimeout(res, 100));
+    progressBarFill.style.width = `${i}%`;
+    progressText.innerText = `${i}%`;
+  }
+
+  setTimeout(() => {
+    progressContainer.classList.remove('active');
+    
+    // Set preview image
+    const previewImg = document.getElementById('previewImg');
+    previewImg.src = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+    
+    renderQualityCards(videoId);
+    resultsSection.classList.add('active');
+    showToast('Thumbnails loaded successfully!', 'success');
+  }, 250);
+}
+
+/* --- Render Quality Cards & Download Buttons --- */
+function renderQualityCards(videoId) {
+  const grid = document.getElementById('qualityGrid');
+  if (!grid) return;
+
+  grid.innerHTML = '';
+
+  const qualities = [
+    { title: 'Maximum Resolution (HD)', specs: '1920 x 1080 / 1280 x 720', key: 'maxresdefault' },
+    { title: 'High Quality', specs: '640 x 480', key: 'sddefault' },
+    { title: 'Medium Quality', specs: '480 x 360', key: 'hqdefault' },
+    { title: 'Standard Quality', specs: '320 x 180', key: 'mqdefault' }
+  ];
+
+  qualities.forEach(q => {
+    const card = document.createElement('div');
+    card.className = 'quality-card';
+    card.innerHTML = `
+      <div class="quality-info">
+        <div class="quality-title">${q.title}</div>
+        <div class="quality-specs">${q.specs}</div>
+      </div>
+      <button class="quality-btn" data-key="${q.key}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+        </svg>
+        Download <span class="format-tag">${state.selectedFormat.toUpperCase()}</span>
+      </button>
+    `;
+
+    const btn = card.querySelector('.quality-btn');
+    btn.addEventListener('click', () => {
+      const imageUrl = `https://img.youtube.com/vi/${videoId}/${q.key}.jpg`;
+      const filename = `SnapCover_${videoId}_${q.key}.${state.selectedFormat}`;
+      downloadThumbnail(imageUrl, filename, state.selectedFormat);
+    });
+
+    grid.appendChild(card);
+  });
+}
+
+/* --- Canvas Conversion & Direct Download Logic --- */
+async function downloadThumbnail(url, filename, format) {
+  showToast(`Preparing ${format.toUpperCase()} download...`, 'info');
+
+  try {
+    // Create offscreen image
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    
+    // We append a timestamp to bypass standard browser cached non-CORS response
+    const cacheBustUrl = `${url}?nocache=${Date.now()}`;
+    
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = () => reject(new Error('Image load failed'));
+      img.src = cacheBustUrl;
+    });
+
+    // Create offscreen canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth || img.width;
+    canvas.height = img.naturalHeight || img.height;
+
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+
+    // Determine target MIME type
+    let mimeType = 'image/jpeg';
+    if (format === 'png') mimeType = 'image/png';
+    if (format === 'webp') mimeType = 'image/webp';
+
+    // Convert canvas to Blob
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        throw new Error('Canvas conversion failed');
+      }
+
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      showToast(`Downloaded ${filename} successfully!`, 'success');
+    }, mimeType, 0.95);
+
+  } catch (err) {
+    console.warn('Canvas direct conversion notice:', err);
+    // Fallback: If CORS blocks canvas export on certain network configurations,
+    // trigger direct window open with clear advice to the user
+    showToast('Direct download initiated via safe link!', 'info');
+    window.open(url, '_blank');
+  }
+}
+
+/* --- Toast Notification System --- */
+function showToast(message, type = 'info') {
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+
+  let iconSvg = '';
+  if (type === 'error') {
+    iconSvg = `<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+  } else if (type === 'success') {
+    iconSvg = `<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+  } else {
+    iconSvg = `<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+  }
+
+  toast.innerHTML = `${iconSvg} <span>${message}</span>`;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(50px)';
+    toast.style.transition = 'all 0.3s ease';
+    setTimeout(() => {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 300);
+  }, 3500);
+}
