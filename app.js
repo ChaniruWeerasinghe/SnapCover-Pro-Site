@@ -186,10 +186,12 @@ function renderQualityCards(videoId) {
   grid.innerHTML = '';
 
   const qualities = [
-    { title: 'Maximum Resolution (HD)', specs: '1920 x 1080 / 1280 x 720', key: 'maxresdefault' },
-    { title: 'High Quality', specs: '640 x 480', key: 'sddefault' },
-    { title: 'Medium Quality', specs: '480 x 360', key: 'hqdefault' },
-    { title: 'Standard Quality', specs: '320 x 180', key: 'mqdefault' }
+    { title: 'Ultra HD 8K', specs: '7680 x 4320 • Super Resolution', key: '8k', sourceKey: 'maxresdefault', width: 7680, height: 4320 },
+    { title: 'Ultra HD 4K', specs: '3840 x 2160 • High-Res Canvas Asset', key: '4k', sourceKey: 'maxresdefault', width: 3840, height: 2160 },
+    { title: 'Maximum Resolution (HD)', specs: '1920 x 1080 / 1280 x 720 • Native Original', key: 'maxresdefault', sourceKey: 'maxresdefault' },
+    { title: 'High Quality', specs: '640 x 480', key: 'sddefault', sourceKey: 'sddefault' },
+    { title: 'Medium Quality', specs: '480 x 360', key: 'hqdefault', sourceKey: 'hqdefault' },
+    { title: 'Standard Quality', specs: '320 x 180', key: 'mqdefault', sourceKey: 'mqdefault' }
   ];
 
   qualities.forEach(q => {
@@ -210,9 +212,9 @@ function renderQualityCards(videoId) {
 
     const btn = card.querySelector('.quality-btn');
     btn.addEventListener('click', () => {
-      const imageUrl = `https://img.youtube.com/vi/${videoId}/${q.key}.jpg`;
+      const imageUrl = `https://img.youtube.com/vi/${videoId}/${q.sourceKey}.jpg`;
       const filename = `SnapCover_${videoId}_${q.key}.${state.selectedFormat}`;
-      downloadThumbnail(imageUrl, filename, state.selectedFormat);
+      downloadThumbnail(imageUrl, filename, state.selectedFormat, q.width, q.height);
     });
 
     grid.appendChild(card);
@@ -220,7 +222,7 @@ function renderQualityCards(videoId) {
 }
 
 /* --- Canvas Conversion & Direct Download Logic --- */
-async function downloadThumbnail(url, filename, format) {
+async function downloadThumbnail(url, filename, format, targetWidth, targetHeight) {
   showToast(`Preparing ${format.toUpperCase()} download...`, 'info');
 
   try {
@@ -239,11 +241,16 @@ async function downloadThumbnail(url, filename, format) {
 
     // Create offscreen canvas
     const canvas = document.createElement('canvas');
-    canvas.width = img.naturalWidth || img.width;
-    canvas.height = img.naturalHeight || img.height;
+    const targetW = targetWidth || (img.naturalWidth || img.width);
+    const targetH = targetHeight || (img.naturalHeight || img.height);
+    
+    canvas.width = targetW;
+    canvas.height = targetH;
 
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, targetW, targetH);
 
     // Determine target MIME type
     let mimeType = 'image/jpeg';
