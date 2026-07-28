@@ -112,13 +112,11 @@ main.container {
 
 /* Header & Nav */
 .site-header {
-  padding: 1.5rem 0;
-  border-bottom: 1px solid var(--border-color);
-  backdrop-filter: blur(12px);
-  position: sticky;
-  top: 0;
+  padding: 1.75rem 0;
+  border-bottom: none;
+  background: transparent;
+  position: relative;
   z-index: 50;
-  background-color: var(--glass-bg);
 }
 
 .header-content {
