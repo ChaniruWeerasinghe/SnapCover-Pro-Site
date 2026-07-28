@@ -684,7 +684,7 @@ main.container {
   transform: translateY(-2px);
 }
 
-/* GitHub Dual-Account Custom Dropdown (Positioned Below GitHub Icon) */
+/* GitHub Dual-Account Custom Dropup (Pops UP above icon for 100% visibility) */
 .github-dropdown-wrapper {
   position: relative;
   display: inline-block;
@@ -692,7 +692,7 @@ main.container {
 
 .github-accounts-dropdown {
   position: absolute;
-  top: calc(100% + 8px);
+  bottom: calc(100% + 10px);
   left: 50%;
   transform: translateX(-50%);
   background: var(--bg-card);
@@ -709,10 +709,10 @@ main.container {
 }
 
 /* Hover bridge so mouse transition never breaks */
-.github-accounts-dropdown::before {
+.github-accounts-dropdown::after {
   content: '';
   position: absolute;
-  top: -12px;
+  bottom: -12px;
   left: 0;
   right: 0;
   height: 14px;
@@ -721,7 +721,7 @@ main.container {
 .github-dropdown-wrapper:hover .github-accounts-dropdown,
 .github-dropdown-wrapper.open .github-accounts-dropdown {
   display: flex;
-  animation: fadeInDown 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeInUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .github-account-item {
