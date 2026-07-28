@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initUrlValidation();
   initCustomDropdown();
+  initGithubDropdown();
   initFormHandler();
 });
 
@@ -116,6 +117,22 @@ function initCustomDropdown() {
 
   document.addEventListener('click', () => {
     dropdown.classList.remove('open');
+  });
+}
+
+/* --- GitHub Dual-Account Dropdown Handler --- */
+function initGithubDropdown() {
+  const wrapper = document.getElementById('githubDropdownWrapper');
+  const btn = document.getElementById('githubBtn');
+  if (!wrapper || !btn) return;
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    wrapper.classList.toggle('open');
+  });
+
+  document.addEventListener('click', () => {
+    wrapper.classList.remove('open');
   });
 }
 

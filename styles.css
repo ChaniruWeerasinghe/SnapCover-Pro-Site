@@ -718,7 +718,8 @@ main.container {
   height: 14px;
 }
 
-.github-dropdown-wrapper:hover .github-accounts-dropdown {
+.github-dropdown-wrapper:hover .github-accounts-dropdown,
+.github-dropdown-wrapper.open .github-accounts-dropdown {
   display: flex;
   animation: fadeInDown 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
