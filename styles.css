@@ -95,7 +95,7 @@ body {
 /* Container */
 .container {
   width: 100%;
-  max-width: 1140px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 1.5rem;
 }
@@ -105,9 +105,9 @@ main.container {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: calc(100vh - 160px);
-  padding-top: 2rem;
-  padding-bottom: 3rem;
+  min-height: calc(100vh - 75px); /* Full screen height hero view */
+  padding-top: 1rem;
+  padding-bottom: 2rem;
 }
 
 /* Header & Nav */
