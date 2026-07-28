@@ -582,7 +582,7 @@ main.container {
 .site-footer {
   margin-top: auto;
   border-top: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  background: transparent;
   padding: 3rem 0 2rem;
 }
 
