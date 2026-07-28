@@ -684,32 +684,43 @@ main.container {
   transform: translateY(-2px);
 }
 
-/* GitHub Dual-Account Custom Dropdown */
+/* GitHub Dual-Account Custom Dropdown (Positioned Below GitHub Icon) */
 .github-dropdown-wrapper {
   position: relative;
+  display: inline-block;
 }
 
 .github-accounts-dropdown {
   position: absolute;
-  bottom: calc(100% + 8px);
+  top: calc(100% + 8px);
   left: 50%;
-  transform: translateX(-50%) translateY(8px);
+  transform: translateX(-50%);
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-main);
   padding: 0.5rem;
-  width: 220px;
+  width: 230px;
   display: none;
   flex-direction: column;
   gap: 0.35rem;
-  z-index: 60;
-  backdrop-filter: blur(20px);
+  z-index: 100;
+  backdrop-filter: blur(24px);
+}
+
+/* Hover bridge so mouse transition never breaks */
+.github-accounts-dropdown::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 0;
+  right: 0;
+  height: 14px;
 }
 
 .github-dropdown-wrapper:hover .github-accounts-dropdown {
   display: flex;
-  animation: fadeInUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeInDown 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .github-account-item {
