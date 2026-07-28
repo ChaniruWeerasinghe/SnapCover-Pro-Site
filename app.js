@@ -219,12 +219,12 @@ function renderQualityCards(videoId) {
   grid.innerHTML = '';
 
   const qualities = [
-    { title: 'Ultra HD 8K', specs: '7680 x 4320 • Super Resolution', key: '8k', sourceKey: 'maxresdefault', width: 7680, height: 4320 },
-    { title: 'Ultra HD 4K', specs: '3840 x 2160 • High-Res Canvas Asset', key: '4k', sourceKey: 'maxresdefault', width: 3840, height: 2160 },
-    { title: 'Maximum Resolution (HD)', specs: '1920 x 1080 / 1280 x 720 • Native Original', key: 'maxresdefault', sourceKey: 'maxresdefault' },
-    { title: 'High Quality', specs: '640 x 480', key: 'sddefault', sourceKey: 'sddefault' },
-    { title: 'Medium Quality', specs: '480 x 360', key: 'hqdefault', sourceKey: 'hqdefault' },
-    { title: 'Standard Quality', specs: '320 x 180', key: 'mqdefault', sourceKey: 'mqdefault' }
+    { title: 'Ultra HD 8K', specs: '7680 x 4320 • Canvas Super Resolution', key: '8k', sourceKey: 'maxresdefault', width: 7680, height: 4320, isUpscaled: true },
+    { title: 'Ultra HD 4K', specs: '3840 x 2160 • High-Res Canvas Asset', key: '4k', sourceKey: 'maxresdefault', width: 3840, height: 2160, isUpscaled: true },
+    { title: 'Maximum Resolution (HD)', specs: '1920 x 1080 / 1280 x 720 • Native Original', key: 'maxresdefault', sourceKey: 'maxresdefault', isUpscaled: false },
+    { title: 'High Quality', specs: '640 x 480', key: 'sddefault', sourceKey: 'sddefault', isUpscaled: false },
+    { title: 'Medium Quality', specs: '480 x 360', key: 'hqdefault', sourceKey: 'hqdefault', isUpscaled: false },
+    { title: 'Standard Quality', specs: '320 x 180', key: 'mqdefault', sourceKey: 'mqdefault', isUpscaled: false }
   ];
 
   qualities.forEach(q => {
@@ -235,7 +235,10 @@ function renderQualityCards(videoId) {
     card.innerHTML = `
       <div class="quality-info">
         <div class="quality-header-row">
-          <div class="quality-title">${q.title}</div>
+          <div class="quality-title-group">
+            <span class="quality-title">${q.title}</span>
+            ${q.isUpscaled ? '<span class="tag-upscaled">UPSCALED</span>' : ''}
+          </div>
           <span class="size-badge" id="badge-${q.key}">${estimatedSize}</span>
         </div>
         <div class="quality-specs">${q.specs}</div>
