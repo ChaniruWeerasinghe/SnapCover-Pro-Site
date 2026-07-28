@@ -111,7 +111,9 @@ function initCustomDropdown() {
       state.selectedFormat = opt.dataset.value;
       if (selectedText) selectedText.innerText = opt.dataset.value.toUpperCase();
       dropdown.classList.remove('open');
-      showToast(`Selected format: ${state.selectedFormat.toUpperCase()}`, 'info');
+      if (state.currentVideoId) {
+        renderQualityCards(state.currentVideoId);
+      }
     });
   });
 
@@ -195,6 +197,20 @@ async function handleProcess() {
   }, 250);
 }
 
+/* --- Estimated File Size Calculator --- */
+function getEstimatedSize(key, format) {
+  const f = (format || 'png').toLowerCase();
+  const estimates = {
+    '8k': { png: '~14.5 MB', jpg: '~4.8 MB', webp: '~2.8 MB' },
+    '4k': { png: '~4.5 MB', jpg: '~1.8 MB', webp: '~1.1 MB' },
+    'maxresdefault': { png: '~1.8 MB', jpg: '~520 KB', webp: '~340 KB' },
+    'sddefault': { png: '~380 KB', jpg: '~110 KB', webp: '~75 KB' },
+    'hqdefault': { png: '~210 KB', jpg: '~60 KB', webp: '~40 KB' },
+    'mqdefault': { png: '~95 KB', jpg: '~30 KB', webp: '~20 KB' }
+  };
+  return (estimates[key] && estimates[key][f]) ? estimates[key][f] : '~1.0 MB';
+}
+
 /* --- Render Quality Cards & Download Buttons --- */
 function renderQualityCards(videoId) {
   const grid = document.getElementById('qualityGrid');
@@ -212,18 +228,23 @@ function renderQualityCards(videoId) {
   ];
 
   qualities.forEach(q => {
+    const estimatedSize = getEstimatedSize(q.key, state.selectedFormat);
     const card = document.createElement('div');
     card.className = 'quality-card';
+    card.id = `card-${q.key}`;
     card.innerHTML = `
       <div class="quality-info">
-        <div class="quality-title">${q.title}</div>
+        <div class="quality-header-row">
+          <div class="quality-title">${q.title}</div>
+          <span class="size-badge" id="badge-${q.key}">${estimatedSize}</span>
+        </div>
         <div class="quality-specs">${q.specs}</div>
       </div>
-      <button class="quality-btn" data-key="${q.key}">
+      <button class="quality-btn" id="btn-${q.key}" data-key="${q.key}">
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
         </svg>
-        Download <span class="format-tag">${state.selectedFormat.toUpperCase()}</span>
+        <span class="btn-label">Download ${state.selectedFormat.toUpperCase()}</span>
       </button>
     `;
 
@@ -231,7 +252,7 @@ function renderQualityCards(videoId) {
     btn.addEventListener('click', () => {
       const imageUrl = `https://img.youtube.com/vi/${videoId}/${q.sourceKey}.jpg`;
       const filename = `SnapCover_${videoId}_${q.key}.${state.selectedFormat}`;
-      downloadThumbnail(imageUrl, filename, state.selectedFormat, q.width, q.height);
+      downloadThumbnail(imageUrl, filename, state.selectedFormat, q.width, q.height, q.key);
     });
 
     grid.appendChild(card);
@@ -239,8 +260,12 @@ function renderQualityCards(videoId) {
 }
 
 /* --- Canvas Conversion & Direct Download Logic --- */
-async function downloadThumbnail(url, filename, format, targetWidth, targetHeight) {
-  showToast(`Preparing ${format.toUpperCase()} download...`, 'info');
+async function downloadThumbnail(url, filename, format, targetWidth, targetHeight, cardKey) {
+  const btn = document.getElementById(`btn-${cardKey}`);
+  const btnLabel = btn ? btn.querySelector('.btn-label') : null;
+  const originalBtnText = btnLabel ? btnLabel.innerText : '';
+
+  if (btnLabel) btnLabel.innerText = 'Converting...';
 
   try {
     // Create offscreen image
@@ -280,6 +305,24 @@ async function downloadThumbnail(url, filename, format, targetWidth, targetHeigh
         throw new Error('Canvas conversion failed');
       }
 
+      // Calculate real MB / KB file size
+      const bytes = blob.size;
+      let realSizeStr = '';
+      if (bytes >= 1024 * 1024) {
+        realSizeStr = (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+      } else {
+        realSizeStr = (bytes / 1024).toFixed(0) + ' KB';
+      }
+
+      // Update badge with Real Size indicator
+      const badge = document.getElementById(`badge-${cardKey}`);
+      if (badge) {
+        badge.innerText = `${realSizeStr}`;
+        badge.classList.add('real-size');
+      }
+
+      if (btnLabel) btnLabel.innerText = `Downloaded (${realSizeStr})`;
+
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
@@ -288,15 +331,16 @@ async function downloadThumbnail(url, filename, format, targetWidth, targetHeigh
       link.click();
       document.body.removeChild(link);
 
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-      showToast(`Downloaded ${filename} successfully!`, 'success');
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+        if (btnLabel) btnLabel.innerText = originalBtnText;
+      }, 2500);
+
     }, mimeType, 0.95);
 
   } catch (err) {
     console.warn('Canvas direct conversion notice:', err);
-    // Fallback: If CORS blocks canvas export on certain network configurations,
-    // trigger direct window open with clear advice to the user
-    showToast('Direct download initiated via safe link!', 'info');
+    if (btnLabel) btnLabel.innerText = originalBtnText;
     window.open(url, '_blank');
   }
 }
